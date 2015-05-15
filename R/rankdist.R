@@ -43,14 +43,6 @@ setClass( "RankData",
 )
 
 
-setClass( "SuffData",
-          representation = representation(
-              nobs = "numeric",
-              fai.coeff = "numeric",
-              fai_len = "numeric"
-          )
-)
-
 #' @title RankInit Class
 #' @description A S4 class to store initialization information of model fitting
 #' 
@@ -217,7 +209,6 @@ RankDistanceModel <- function(dat,init,ctrl){
     distinctn <- dat@ndistinct	# total distinct observations
     clu <- init@clu
     count <- dat@count
-    z <- matrix(ncol = distinctn,nrow = clu)
     p_clu <- matrix(ncol = distinctn,nrow = clu)
     # setting up return values
     modal_ranking.est <- list()
@@ -230,24 +221,26 @@ RankDistanceModel <- function(dat,init,ctrl){
     loopind=0
     
     if (clu > 1L){  # use EM to fit multicluster model
+        # further initialization
+        modal_ranking.est <- init@modal_ranking.init
+        fai <- init@fai.init
+        init.clu = list()
+        for (i in 1:clu){
+            init.clu[[i]] <- new("RankInit",fai.init=list(fai[[i]]),modal_ranking.init=list(modal_ranking.est[[i]]),clu=1L)
+        }
         
         while(TRUE){
             loopind <- loopind+1
-            if (loopind == 1){
-                modal_ranking.est <- init@modal_ranking.init
-                fai <- init@fai.init
-            }
             # E step
-            z.tmp <- matrix(ncol = distinctn,nrow = clu)
+            z <- matrix(nrow = distinctn,ncol = clu)
             for (i in 1:clu){
-                z.tmp[i,] <- p[i]*FindProb(dat,modal_ranking.est[[i]],fai[[i]])
+                z[,i] <- p[i]*FindProb(dat,modal_ranking.est[[i]],fai[[i]])
             }
-            sums <- colSums(z.tmp)
-            for (i in 1:distinctn){
-                z[,i] <- z.tmp[,i]/sums[i]
-            }
+            sums <- rowSums(z)
+            z <- z/sums
+            
             # M step
-            p <- z %*% count
+            p <- t(z) %*% count
             p <- p/sum(p)
             if (any(p<0.03)){
                 warning("One cluster has probability smaller than 3%; Try fewer clusters")
@@ -255,10 +248,13 @@ RankDistanceModel <- function(dat,init,ctrl){
             }
             for ( i in 1:clu){
                 dat.clu <- dat
-                dat.clu@count <- z[i,] * count
-                dat.clu@nobs <- sum(z[i,] * count)
-                init.clu <- new("RankInit",fai.init=list(fai[[i]]),modal_ranking.init=list(modal_ranking.est[[i]]),clu=1L)
-                solve.clu <- SearchPi0(dat.clu,init.clu,ctrl)
+                dat.clu@count <- z[,i] * count
+                dat.clu@nobs <- sum(z[,i] * count)
+                # need change 
+                init.clu[[i]]@fai.init <- list(fai[[i]])
+                init.clu[[i]]@modal_ranking.init <- list(modal_ranking.est[[i]])
+                
+                solve.clu <- SearchPi0(dat.clu,init.clu[[i]],ctrl)
                 modal_ranking.est[[i]] <- solve.clu$pi0.ranking
                 fai[[i]] <- solve.clu$fai.est
                 p_clu[i,] <- FindProb(dat,modal_ranking.est[[i]],fai[[i]])*p[i]
@@ -285,21 +281,21 @@ RankDistanceModel <- function(dat,init,ctrl){
             fai.last <- fai
             log_likelihood_clu.last <- log_likelihood_clu
         } # inf loop
+        
+        est_prob <- colSums(p_clu)
     } else {  # fit single cluster model
         sigle_cluster_mod <- SearchPi0(dat,init,ctrl)
         modal_ranking.est <- list(sigle_cluster_mod$pi0.ranking)
         p <- 1
         fai <- list(sigle_cluster_mod$fai.est)
         log_likelihood_clu.last <- sigle_cluster_mod$log_likelihood
+        est_prob <- FindProb(dat,modal_ranking.est[[1]],fai[[1]])*p[1]
     }
     # finishing up with parameter estimation and summary statistics
     p <- as.numeric(p)
     v <- length(p) - 1 + sum(unlist(fai)!=0)
     bic <- 2*log_likelihood_clu.last - v*log(n)
-    est_prob <- 0
-    for (i in 1:clu){
-        est_prob <- est_prob + FindProb(dat,modal_ranking.est[[i]],fai[[i]])*p[i]
-    }
+    est_prob <- colSums(p_clu)
     expectation <- as.numeric(est_prob*n)
     SSR <- sum((expectation-dat@count)^2/expectation)
     ret <- list(p=p,modal_ranking.est=modal_ranking.est,w.est=lapply(fai,faiTow),fai.est=fai,SSR=SSR,log_likelihood=log_likelihood_clu.last,free_params=v,BIC=bic,expectation=expectation,iteration=loopind,model.call=func.call)

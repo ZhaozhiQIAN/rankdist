@@ -44,8 +44,7 @@ ExtractSuff=function(dat,modal_ranking){
         fai.coeff = fai.coeff[1:dat@topq]
         fai_len = dat@topq
     }
-    
-    new("SuffData",nobs = dat@nobs,fai.coeff=fai.coeff,fai_len=fai_len)
+    list(nobs=dat@nobs, fai.coeff=fai.coeff, fai_len=fai_len)
 }
 
 
@@ -80,9 +79,10 @@ SearchPi0=function(dat,init,ctrl){
         tested = hash::has.key(testkeys,hashtable)
         if (all(tested)) break
         hash::.set(hashtable,keys=testkeys[!tested],values=rep(TRUE,length(testkeys[!tested])))
-        candidates = neighbours[!tested,,drop=FALSE]
-        for (i in 1:nrow(candidates)){
-            this_ranking = candidates[i,]
+        for (i in 1:nrow(neighbours)){
+            # tested neighbours cannot be better
+            if (tested[i]) next
+            this_ranking = neighbours[i,]
             if (ctrl@SearchPi0_show_message){
                 message("Now Checking Neighbour ",this_ranking)
             }
@@ -142,17 +142,17 @@ GHC = function(fai,t.lst){
 
 EstimateFai = function(suffdat,init,ctrl){
     obj = function(fai){
-        a = -1*fai%*%suffdat@fai.coeff - suffdat@nobs*LogC(fai)
+        a = -1*fai%*%suffdat$fai.coeff - suffdat$nobs*LogC(fai)
         as.numeric(-1*a)
     }
-    tt = t.gen(suffdat@fai_len)
+    tt = t.gen(suffdat$fai_len)
     gradiant = function(fai){
         grad = GHC(fai,tt)
-        suffdat@nobs*grad + suffdat@fai.coeff
+        suffdat$nobs*grad + suffdat$fai.coeff
     }
-    opt_res = optimx::optimx(par=init@fai.init[[init@clu]],fn=obj,gr=gradiant,lower=rep(0,suffdat@fai_len),upper=rep(Inf,suffdat@fai_len),method="L-BFGS-B",control=ctrl)
-    fai.est = unlist(opt_res[1:suffdat@fai_len])
-    list(fai.est=fai.est,log_likelihood=-1*opt_res[[suffdat@fai_len+1]])
+    opt_res = optimx::optimx(par=init@fai.init[[init@clu]],fn=obj,gr=gradiant,lower=rep(0,suffdat$fai_len),upper=rep(Inf,suffdat$fai_len),method="L-BFGS-B",control=ctrl)
+    fai.est = unlist(opt_res[1:suffdat$fai_len])
+    list(fai.est=fai.est,log_likelihood=-1*opt_res[[suffdat$fai_len+1]])
 }
 
 
@@ -175,4 +175,5 @@ KwDist = function(p1, p2,w){
     }
     distance
 }
+
 
