@@ -15,16 +15,25 @@ wTofai = function(w.true){
 }
 
 
-FindProb=function(dat,modal_ranking,fai){
-    distance = fai %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
-    C = exp(LogC(fai))
-    prob = exp(-1*distance)/C
-    prob
-}
+
+setGeneric("FindProb",
+        def=function(dat,ctrl,modal_ranking,fai){standardGeneric("FindProb")}
+)
+
+
+setMethod("FindProb",
+        signature=c("RankData","RankControlWeightedKendall"),
+        definition = function(dat,ctrl,modal_ranking,fai){
+            distance = fai %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
+            C = exp(LogC(fai))
+            prob = exp(-1*distance)/C
+            prob
+        }
+)
 
 
 # used in SearchPi0: make a optimization result into a model
-SingleClusterModel=function(solveres,dat,pi0){
+AddInfo=function(solveres,dat,pi0){
     solveres$w.est = faiTow(solveres$fai.est)
     solveres$nobs = dat@nobs
     solveres$nobj = dat@nobj
@@ -33,20 +42,35 @@ SingleClusterModel=function(solveres,dat,pi0){
 }
 
 
-# Extract sufficient statistics
-# OK for top-q ranking
-ExtractSuff=function(dat,modal_ranking){
-    fai.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
-    fai.coeff = matrix(fai.coeff,ncol = dat@ndistinct,byrow = TRUE)%*%dat@count
-    fai.coeff = as.numeric(fai.coeff)
-    fai_len = dat@nobj-1
-    if (dat@topq>0){
-        fai.coeff = fai.coeff[1:dat@topq]
-        fai_len = dat@topq
-    }
-    list(nobs=dat@nobs, fai.coeff=fai.coeff, fai_len=fai_len)
-}
+setGeneric("SingleClusterModel",
+        def=function(dat,init,ctrl,modal_ranking){standardGeneric("SingleClusterModel")}
+)
 
+setMethod("SingleClusterModel",
+    signature = c("RankData","RankInit","RankControlWeightedKendall"),
+    definition = function(dat,init,ctrl,modal_ranking){
+        fai.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
+        fai.coeff = matrix(fai.coeff,ncol = dat@ndistinct,byrow = TRUE)%*%dat@count
+        fai.coeff = as.numeric(fai.coeff)
+        fai_len = dat@nobj-1
+        if (dat@topq>0){
+            fai.coeff = fai.coeff[1:dat@topq]
+            fai_len = dat@topq
+        }
+        obj = function(fai){
+            a = -1*fai%*%fai.coeff - dat@nobs*LogC(fai)
+            as.numeric(-1*a)
+        }
+        tt = t.gen(fai_len)
+        gradiant = function(fai){
+            grad = GHC(fai,tt)
+            dat@nobs*grad + fai.coeff
+        }
+        opt_res = optimx::optimx(par=init@fai.init[[init@clu]],fn=obj,gr=gradiant,lower=rep(0,fai_len),upper=rep(Inf,fai_len),method="L-BFGS-B",control=ctrl@optimx_control)
+        fai.est = unlist(opt_res[1:fai_len])
+        list(fai.est=fai.est,log_likelihood=-1*opt_res[[fai_len+1]])
+        }
+)
 
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
@@ -54,9 +78,8 @@ SearchPi0=function(dat,init,ctrl){
     if (dat@topq > 0){
         curr_best_ranking[curr_best_ranking>dat@topq+1]=dat@topq+1
     }
-    curr_suffdat = ExtractSuff(dat,curr_best_ranking)
-    curr_solve = EstimateFai(curr_suffdat,init,ctrl@optimx_control) # calling dev
-    curr_model = SingleClusterModel(curr_solve,dat,curr_best_ranking)
+    curr_solve <- SingleClusterModel(dat,init,ctrl,curr_best_ranking)
+    curr_model = AddInfo(curr_solve,dat,curr_best_ranking)
     FUN = ctrl@SearchPi0_FUN
     curr_goodness = FUN(curr_model)
     hashtable = hash::hash()
@@ -86,9 +109,8 @@ SearchPi0=function(dat,init,ctrl){
             if (ctrl@SearchPi0_show_message){
                 message("Now Checking Neighbour ",this_ranking)
             }
-            this_suffdat = ExtractSuff(dat,this_ranking)
-            this_solve = EstimateFai(this_suffdat,init,ctrl@optimx_control) #calling 
-            this_model = SingleClusterModel(this_solve,dat,this_ranking)
+            this_solve <- SingleClusterModel(dat,init,ctrl,this_ranking)
+            this_model = AddInfo(this_solve,dat,this_ranking)
             this_goodness = FUN(this_model)
             if (this_goodness > curr_goodness){
                 curr_goodness = this_goodness
@@ -140,20 +162,6 @@ GHC = function(fai,t.lst){
     gradiant
 }
 
-EstimateFai = function(suffdat,init,ctrl){
-    obj = function(fai){
-        a = -1*fai%*%suffdat$fai.coeff - suffdat$nobs*LogC(fai)
-        as.numeric(-1*a)
-    }
-    tt = t.gen(suffdat$fai_len)
-    gradiant = function(fai){
-        grad = GHC(fai,tt)
-        suffdat$nobs*grad + suffdat$fai.coeff
-    }
-    opt_res = optimx::optimx(par=init@fai.init[[init@clu]],fn=obj,gr=gradiant,lower=rep(0,suffdat$fai_len),upper=rep(Inf,suffdat$fai_len),method="L-BFGS-B",control=ctrl)
-    fai.est = unlist(opt_res[1:suffdat$fai_len])
-    list(fai.est=fai.est,log_likelihood=-1*opt_res[[suffdat$fai_len+1]])
-}
 
 
 # find the weighted kendall distance between p1 and p2

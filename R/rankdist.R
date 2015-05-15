@@ -73,7 +73,7 @@ setClass( "RankInit",
 )
 
 #' @title RankControl Class
-#' @description A S4 class to store control parameters for model fitting
+#' @description A virtual S4 class to store control parameters for model fitting. 
 #' 
 #' @slot EM_limit maximum number of EM iteration
 #' @slot EM_epsilon convergence error for weights and cluster probabilities in EM iteration
@@ -84,12 +84,11 @@ setClass( "RankInit",
 #' @slot SearchPi0_neighbour a character string specifying which type of neighbour to use in the local search. Supported values are: "Cayley" to use neighbours in terms of Cayley distance or "Kendall" to use neighbours in terms of Kendall distance.
 #' Note that Kendall neighbours are a subset of Cayley neighbours
 #' @slot optimx_control a list to be passed to \code{\link[optimx]{optimx}}. The list must not contain a component \code{maximize=TRUE} since internally the negation of the likelihood function is minimized.
-#' @details The control parameters that start with prefix \code{EM_} are intended for the EM iteration. The ones with prefix \code{SeachPi0} control the behaviour of searching model ranking.
-#' The function object specified in the \code{SearchPi0_control} takes a list as argument. The components in the list include the following. \code{obs}: the number of observations.
+#' @details RankControl class must be extended to reflect what distance metric should be used. Possibles extendions are \code{\link{RankControlWeightedKendall}}. The control parameters that start with prefix \code{EM_} are intended for the EM iteration. The ones with prefix \code{SeachPi0} control the behaviour of searching model ranking.
+#' @section User-defined Criterion:
+#' You can specify user-defined criterion to choose modal rankings. The function object SearchPi0_FUN takes a list as argument. The components in the list include the following. \code{obs}: the number of observations.
 #' \code{w.est}: the estimated weights. \code{log_likelihood}: the estimated log_likelihood. With this information, most of the popular information criterions can be supported and customized criterions can also be defined.
-#' A larger returned value indicates a better fit. 
-#' @examples # enabling messages and warnings
-#' testctrl = new("RankControl",SearchPi0_show_message=TRUE, optimx_control=list(dowarn=TRUE))
+#' A larger returned value indicates a better fit. Note that if you are fitting a mixture model the EM algorthm always tries to maximized the log likelihood. Thus the default value should be used in this case.
 #' @seealso \code{\link{RankData}}, \code{\link{RankInit}}
 #' @aliases RankControl RankControl-class
 #' @export
@@ -102,7 +101,8 @@ setClass( "RankControl",
               SearchPi0_fast_traversal = "logical",
               SearchPi0_show_message = "logical",
               SearchPi0_neighbour = "character",
-              optimx_control = "list"
+              optimx_control = "list",
+              "VIRTUAL"
           ),
           prototype = prototype(
               EM_limit=500,
@@ -115,6 +115,36 @@ setClass( "RankControl",
               optimx_control = list(maximize=FALSE,starttests=TRUE,trace=0,dowarn=FALSE)
           )
 )
+
+
+#' @title RankControlWeightedKendall Class
+#' @description A S4 class to store control parameters for Weighted Kendall distance model fitting. It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' @slot EM_limit maximum number of EM iteration
+#' @slot EM_epsilon convergence error for weights and cluster probabilities in EM iteration
+#' @slot SearchPi0_limit maximum number of iterations in the local seach of pi0.
+#' @slot SearchPi0_FUN a function object that gives a goodness of fit criterion. The default is log likelihood.
+#' @slot SearchPi0_fast_traversal a logical value. If TRUE (by default), immediately traverse to the neighbour if it is better than the current pi0. Otherwise, check all neighbours and traverse to the best one.
+#' @slot SearchPi0_show_message a logical value. If TRUE, the location of the current pi0 is shown.
+#' @slot SearchPi0_neighbour a character string specifying which type of neighbour to use in the local search. Supported values are: "Cayley" to use neighbours in terms of Cayley distance or "Kendall" to use neighbours in terms of Kendall distance.
+#' Note that Kendall neighbours are a subset of Cayley neighbours
+#' @slot optimx_control a list to be passed to \code{\link[optimx]{optimx}}. The list must not contain a component \code{maximize=TRUE} since internally the negation of the likelihood function is minimized.
+#' @slot param_len a numeric value that should be set to (number of object - 1). It specifies the length of parameter.
+#' @details \code{RankControlWeightedKendall} is derived from virtual class \code{\link{RankControl}}. All slots in \code{\link{RankControl}} are still valid. Only one slot \code{param_len} is added. 
+#' This control class tells the solver to fit a model based on Weighted Kendall distance.  
+#' The control parameters that start with prefix \code{EM_} are intended for the EM iteration. The ones with prefix \code{SeachPi0} control the behaviour of searching model ranking.
+#' @examples # enabling messages and warnings
+#' testctrl = new("RankControlWeightedKendall",SearchPi0_show_message=TRUE, optimx_control=list(dowarn=TRUE),param_len=9)
+#' @seealso \code{\link{RankData}}, \code{\link{RankInit}}, \code{\link{RankControl}}
+#' @aliases RankControlWeightedKendall RankControlWeightedKendall-class
+#' @export
+setClass( "RankControlWeightedKendall",
+        representation = representation(
+            param_len = "numeric"
+        ),
+        contains = "RankControl"
+)
+
 
 #' Create Hash Value for Rank 
 #'
@@ -234,7 +264,7 @@ RankDistanceModel <- function(dat,init,ctrl){
             # E step
             z <- matrix(nrow = distinctn,ncol = clu)
             for (i in 1:clu){
-                z[,i] <- p[i]*FindProb(dat,modal_ranking.est[[i]],fai[[i]])
+                z[,i] <- p[i]*FindProb(dat,ctrl,modal_ranking.est[[i]],fai[[i]])
             }
             sums <- rowSums(z)
             z <- z/sums
@@ -257,7 +287,7 @@ RankDistanceModel <- function(dat,init,ctrl){
                 solve.clu <- SearchPi0(dat.clu,init.clu[[i]],ctrl)
                 modal_ranking.est[[i]] <- solve.clu$pi0.ranking
                 fai[[i]] <- solve.clu$fai.est
-                p_clu[i,] <- FindProb(dat,modal_ranking.est[[i]],fai[[i]])*p[i]
+                p_clu[i,] <- FindProb(dat,ctrl,modal_ranking.est[[i]],fai[[i]])*p[i]
             }
             log_likelihood_clu <- sum(log(colSums(p_clu))%*%dat@count)
             # break?
@@ -289,13 +319,12 @@ RankDistanceModel <- function(dat,init,ctrl){
         p <- 1
         fai <- list(sigle_cluster_mod$fai.est)
         log_likelihood_clu.last <- sigle_cluster_mod$log_likelihood
-        est_prob <- FindProb(dat,modal_ranking.est[[1]],fai[[1]])*p[1]
+        est_prob <- FindProb(dat,ctrl,modal_ranking.est[[1]],fai[[1]])*p[1]
     }
     # finishing up with parameter estimation and summary statistics
     p <- as.numeric(p)
     v <- length(p) - 1 + sum(unlist(fai)!=0)
     bic <- 2*log_likelihood_clu.last - v*log(n)
-    est_prob <- colSums(p_clu)
     expectation <- as.numeric(est_prob*n)
     SSR <- sum((expectation-dat@count)^2/expectation)
     ret <- list(p=p,modal_ranking.est=modal_ranking.est,w.est=lapply(fai,faiTow),fai.est=fai,SSR=SSR,log_likelihood=log_likelihood_clu.last,free_params=v,BIC=bic,expectation=expectation,iteration=loopind,model.call=func.call)
