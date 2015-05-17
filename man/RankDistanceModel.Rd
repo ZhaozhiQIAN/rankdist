@@ -18,9 +18,9 @@ A list containing the following components:
 \describe{
 \item{\code{modal_ranking.est}}{the estimated pi0 for each cluster.}
 \item{\code{p}}{the probability of each cluster.}
-\item{\code{w.est}}{the estimated weights of each cluster.}
-\item{\code{param.est}}{the param parameterization of weights of each cluster.}
-\item{\code{SSR}}{the sum of squares of pearson residuals}
+\item{\code{w.est}}{(optional) the estimated weights of each cluster in Weighted Kendall distance model.}
+\item{\code{param.est}}{the parameter estimation of each cluster. Note that the values reported for Weighted Kendall distance model are in phi parametrisation.}
+\item{\code{SSR}}{the sum of squares of Pearson residuals}
 \item{\code{log_likelihood}}{the fitted log_likelihood}
 \item{\code{BIC}}{the fitted Bayesian Information Criterion value}
 \item{\code{free_params}}{the number of free parameters in the model}

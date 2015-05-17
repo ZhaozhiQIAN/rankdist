@@ -13,7 +13,7 @@ The \code{RankInit} class is used to give initial values of model fitting proced
 \section{Slots}{
 
 \describe{
-\item{\code{param.init}}{a list containing initial values of the param parameterization of weights.}
+\item{\code{param.init}}{a list containing initial values of parameters.}
 
 \item{\code{modal_ranking.init}}{a list containing starting points for the modal ranking search.}
 
@@ -22,9 +22,9 @@ The \code{RankInit} class is used to give initial values of model fitting proced
 \item{\code{p.init}}{a numeric vector containing the initial values for cluster probabilities.}
 }}
 \examples{
-c1init = new("RankInit",param.init=list(rep(1,4)),
+c1init <- new("RankInit",param.init=list(rep(1,4)),
      modal_ranking.init=list(c(2,3,4,1,5)),clu=1L)
-c2init = new("RankInit",param.init=list(rep(0.1,4),rep(0.1,4)),
+c2init <- new("RankInit",param.init=list(rep(0.1,4),rep(0.1,4)),
      modal_ranking.init = list(c(2,3,4,1,5),c(2,5,1,4,3)),clu=2L,p.init=c(0.5,0.5))
 }
 \seealso{
