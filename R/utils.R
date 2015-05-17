@@ -2,75 +2,30 @@
     library.dynam.unload("rankdist", libpath)
 }
 
-faiTow = function(fai.true){
-    w.true = rev(cumsum(rev(fai.true)))
+paramTow = function(param.true){
+    w.true = rev(cumsum(rev(param.true)))
     w.true
 }
 
-wTofai = function(w.true){
-    fai.true = numeric(length(w.true))
-    fai.true[1:(length(w.true)-1)] = -diff(w.true)
-    fai.true[length(fai.true)] = w.true[length(w.true)]
-    fai.true
+wToparam = function(w.true){
+    param.true = numeric(length(w.true))
+    param.true[1:(length(w.true)-1)] = -diff(w.true)
+    param.true[length(param.true)] = w.true[length(w.true)]
+    param.true
 }
 
 
 
-setGeneric("FindProb",
-        def=function(dat,ctrl,modal_ranking,fai){standardGeneric("FindProb")}
-)
-
-
-setMethod("FindProb",
-        signature=c("RankData","RankControlWeightedKendall"),
-        definition = function(dat,ctrl,modal_ranking,fai){
-            distance = fai %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
-            C = exp(LogC(fai))
-            prob = exp(-1*distance)/C
-            prob
-        }
-)
 
 
 # used in SearchPi0: make a optimization result into a model
 AddInfo=function(solveres,dat,pi0){
-    solveres$w.est = faiTow(solveres$fai.est)
     solveres$nobs = dat@nobs
     solveres$nobj = dat@nobj
     solveres$pi0.ranking = pi0
     solveres
 }
 
-
-setGeneric("SingleClusterModel",
-        def=function(dat,init,ctrl,modal_ranking){standardGeneric("SingleClusterModel")}
-)
-
-setMethod("SingleClusterModel",
-    signature = c("RankData","RankInit","RankControlWeightedKendall"),
-    definition = function(dat,init,ctrl,modal_ranking){
-        fai.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
-        fai.coeff = matrix(fai.coeff,ncol = dat@ndistinct,byrow = TRUE)%*%dat@count
-        fai.coeff = as.numeric(fai.coeff)
-        fai_len = dat@nobj-1
-        if (dat@topq>0){
-            fai.coeff = fai.coeff[1:dat@topq]
-            fai_len = dat@topq
-        }
-        obj = function(fai){
-            a = -1*fai%*%fai.coeff - dat@nobs*LogC(fai)
-            as.numeric(-1*a)
-        }
-        tt = t.gen(fai_len)
-        gradiant = function(fai){
-            grad = GHC(fai,tt)
-            dat@nobs*grad + fai.coeff
-        }
-        opt_res = optimx::optimx(par=init@fai.init[[init@clu]],fn=obj,gr=gradiant,lower=rep(0,fai_len),upper=rep(Inf,fai_len),method="L-BFGS-B",control=ctrl@optimx_control)
-        fai.est = unlist(opt_res[1:fai_len])
-        list(fai.est=fai.est,log_likelihood=-1*opt_res[[fai_len+1]])
-        }
-)
 
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
@@ -141,11 +96,11 @@ t.gen = function(d){
     }
     t.lst
 }
-GHC = function(fai,t.lst){
-    d = length(fai) # d = t - 1
+GHC = function(param,t.lst){
+    d = length(param) # d = t - 1
     K = matrix(rep(0,d^2),ncol = d, nrow = d)
     for ( i in 1:d){
-        K = -1 * fai[i] * t.lst[[i]] + K
+        K = -1 * param[i] * t.lst[[i]] + K
     }
     K = exp(K)
     K[upper.tri(K)] = 0

@@ -19,7 +19,7 @@ A list containing the following components:
 \item{\code{modal_ranking.est}}{the estimated pi0 for each cluster.}
 \item{\code{p}}{the probability of each cluster.}
 \item{\code{w.est}}{the estimated weights of each cluster.}
-\item{\code{fai.est}}{the fai parameterization of weights of each cluster.}
+\item{\code{param.est}}{the param parameterization of weights of each cluster.}
 \item{\code{SSR}}{the sum of squares of pearson residuals}
 \item{\code{log_likelihood}}{the fitted log_likelihood}
 \item{\code{BIC}}{the fitted Bayesian Information Criterion value}

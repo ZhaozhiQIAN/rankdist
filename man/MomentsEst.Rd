@@ -2,7 +2,7 @@
 % Please edit documentation in R/rankdist.R
 \name{MomentsEst}
 \alias{MomentsEst}
-\title{Find Initial Values of Fai}
+\title{Find Initial Values of param}
 \usage{
 MomentsEst(dat, size, pi0 = NULL)
 }
@@ -15,10 +15,10 @@ MomentsEst(dat, size, pi0 = NULL)
 If not provided, Borda Count method is used to estimate the central ranking.}
 }
 \value{
-estimated fai
+estimated param
 }
 \description{
-\code{MomentEst} finds the initial values of fai which can be used in the subsequent optimization problems.
+\code{MomentEst} finds the initial values of param which can be used in the subsequent optimization problems.
 Linear model is fitted to the log odds of rankings.
 }
 \examples{

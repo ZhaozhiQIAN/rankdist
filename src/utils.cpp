@@ -125,6 +125,51 @@ NumericVector CWeightGivenPi(NumericVector r1, NumericVector r2){
 }
 
 
+// [[Rcpp::export]]
+NumericMatrix FindV(NumericMatrix obs, NumericVector pi0){
+    NumericMatrix ret(obs.nrow(),obs.ncol()-1);
+    NumericVector pi0_perm(pi0.size());
+    NumericVector pi0_dummy(pi0.size());
+    
+    int index;
+    for (double i=0; i<pi0.size(); ++i){
+        index = int(pi0(i)-1);
+        pi0_perm(index) = i; 
+    }
+    for (int i=0;i<obs.nrow();++i){
+        pi0_dummy=seq_len(pi0.size());
+        for (int j=0;j<ret.ncol();++j){
+            ret(i,j) = abs(obs(i,pi0_perm(j))-pi0_dummy(j));
+            for (int k=j; k<ret.ncol();++k){
+                if (obs(i,pi0_perm(k)) < obs(i,pi0_perm(j))){
+                    --pi0_dummy(k);
+                }
+            }
+        }
+    }
+    
+    return(ret);
+}
+
+// [[Rcpp::export]]
+double LogC_Component(NumericVector fai){
+    int t = fai.size()+1;
+    double acc_log=0,acc_term1=0,acc_term2=0;
+    for (int i=0;i<t-1;++i){
+        acc_term1 += log(1-exp(-1*(t-i)*fai(i)));
+        acc_term2 += log(1-exp(-1*fai(i)));
+    }
+    acc_log = acc_term1 - acc_term2;
+    return (acc_log);
+}
+
+
+
+
+
+
+
+
 
 
 

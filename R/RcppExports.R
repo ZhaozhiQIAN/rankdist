@@ -17,3 +17,11 @@ CWeightGivenPi <- function(r1, r2) {
     .Call('rankdist_CWeightGivenPi', PACKAGE = 'rankdist', r1, r2)
 }
 
+FindV <- function(obs, pi0) {
+    .Call('rankdist_FindV', PACKAGE = 'rankdist', obs, pi0)
+}
+
+LogC_Component <- function(fai) {
+    .Call('rankdist_LogC_Component', PACKAGE = 'rankdist', fai)
+}
+

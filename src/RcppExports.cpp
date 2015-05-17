@@ -66,3 +66,34 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
+// FindV
+NumericMatrix FindV(NumericMatrix obs, NumericVector pi0);
+RcppExport SEXP rankdist_FindV(SEXP obsSEXP, SEXP pi0SEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< NumericMatrix >::type obs(obsSEXP );
+        Rcpp::traits::input_parameter< NumericVector >::type pi0(pi0SEXP );
+        NumericMatrix __result = FindV(obs, pi0);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// LogC_Component
+double LogC_Component(NumericVector fai);
+RcppExport SEXP rankdist_LogC_Component(SEXP faiSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< NumericVector >::type fai(faiSEXP );
+        double __result = LogC_Component(fai);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
