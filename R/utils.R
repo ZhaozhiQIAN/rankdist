@@ -31,8 +31,8 @@ AddInfo=function(solveres,dat,pi0){
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
-    if (dat@topq > 0){
-        curr_best_ranking[curr_best_ranking>dat@topq+1]=dat@topq+1
+    if (max(dat@topq) < n-1){
+        curr_best_ranking[curr_best_ranking>max(dat@topq)+1]=max(dat@topq)+1
     }
     curr_solve <- SingleClusterModel(dat,init,ctrl,curr_best_ranking)
     curr_model = AddInfo(curr_solve,dat,curr_best_ranking)

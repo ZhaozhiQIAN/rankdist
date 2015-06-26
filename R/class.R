@@ -30,10 +30,14 @@ setClass( "RankData",
               ordering = "matrix",
               ranking = "matrix",
               count = "numeric",
-              topq = "numeric" # if topq >0, else = -1
+              topq = "numeric", # a numeric vector: topq 
+			  subobs = "numeric", # number of observations for each topq
+			  q_ind = "numeric"  # starting point of each topq location
           ),
           prototype = prototype(
-              topq = -1L
+              topq = -1,
+			  subobs = 1,
+			  q_ind = 1
           )
 )
 

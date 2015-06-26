@@ -1,3 +1,13 @@
+setMethod("initialize", "RankData",
+	function(.Object, ...){
+		
+	}
+)
+
+
+
+
+
 
 setGeneric("SingleClusterModel",
         def=function(dat,init,ctrl,modal_ranking){standardGeneric("SingleClusterModel")}
@@ -66,39 +76,39 @@ setMethod(
 )
 
 # remove this and uncomment above function
-setMethod("SingleClusterModel",
-    signature = c("RankData","RankInit","RankControlWeightedKendall"),
-    definition = function(dat,init,ctrl,modal_ranking){
-        param.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
-        param.coeff = matrix(param.coeff,ncol = dat@ndistinct,byrow = TRUE)%*%dat@count
-        param.coeff = as.numeric(param.coeff)
-        param_len = dat@nobj-1
-        if (dat@topq>0){
-            param.coeff = param.coeff[1:dat@topq]
-            param_len = dat@topq
-        }
-		ind = c(1,6,26,86,206)
-		count_vec = numeric(4)
-		for (i in 1:4){
-			count_vec[i] = sum(dat@count[ind[i]:(ind[i+1]-1)])
-		}
-        obj = function(param){
-			norm_vec = numeric(param_len)
-			for (i in 1:param_len){
-				norm_vec[i] = LogC(c(param[1:i],rep(0,param_len-i)))
-			}
-            a = -1*param%*%param.coeff - count_vec%*%norm_vec
-            as.numeric(-1*a)
-        }
+# setMethod("SingleClusterModel",
+    # signature = c("RankData","RankInit","RankControlWeightedKendall"),
+    # definition = function(dat,init,ctrl,modal_ranking){
+        # param.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
+        # param.coeff = matrix(param.coeff,ncol = dat@ndistinct,byrow = TRUE)%*%dat@count
+        # param.coeff = as.numeric(param.coeff)
+        # param_len = dat@nobj-1
+        # if (dat@topq>0){
+            # param.coeff = param.coeff[1:dat@topq]
+            # param_len = dat@topq
+        # }
+		# ind = c(1,6,26,86,206)
+		# count_vec = numeric(4)
+		# for (i in 1:4){
+			# count_vec[i] = sum(dat@count[ind[i]:(ind[i+1]-1)])
+		# }
+        # obj = function(param){
+			# norm_vec = numeric(param_len)
+			# for (i in 1:param_len){
+				# norm_vec[i] = LogC(c(param[1:i],rep(0,param_len-i)))
+			# }
+            # a = -1*param%*%param.coeff - count_vec%*%norm_vec
+            # as.numeric(-1*a)
+        # }
 
-		opt_res = optimx::optimx(par=init@param.init[[init@clu]][1:param_len],fn=obj,lower=rep(0,param_len),upper=rep(Inf,param_len),method="L-BFGS-B",control=ctrl@optimx_control)
-		param.est = unlist(opt_res[1:param_len])
-		log_likelihood=-1*opt_res[[param_len+1]]
+		# opt_res = optimx::optimx(par=init@param.init[[init@clu]][1:param_len],fn=obj,lower=rep(0,param_len),upper=rep(Inf,param_len),method="L-BFGS-B",control=ctrl@optimx_control)
+		# param.est = unlist(opt_res[1:param_len])
+		# log_likelihood=-1*opt_res[[param_len+1]]
 
-		param.est = c(param.est,rep(0,dat@nobj-1-param_len))
-        list(param.est=param.est,w.est=paramTow(param.est),log_likelihood=log_likelihood)
-    }
-)
+		# param.est = c(param.est,rep(0,dat@nobj-1-param_len))
+        # list(param.est=param.est,w.est=paramTow(param.est),log_likelihood=log_likelihood)
+    # }
+# )
 
 # single cluster model method for Kendall distance
 setMethod("SingleClusterModel",
