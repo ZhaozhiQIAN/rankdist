@@ -238,4 +238,12 @@ MomentsEst <- function(dat,size,pi0=NULL){
 #' @references Marden, J. I. (1995). Analyzing and Modeling Rank Data (94-96). Chapman Hall, New York.
 "apa_obj"
 
+#' American Psychological Association (APA) election data (partial rankings included)
+#'
+#' A dataset containing 5738 complete votes and 9711 partial votes in APA election. There are 5 candidates in total.
+#'
+#' @format a RankData object
+#' 
+#' @references Marden, J. I. (1995). Analyzing and Modeling Rank Data (94-96). Chapman Hall, New York.
+"apa_partial_obj"
 

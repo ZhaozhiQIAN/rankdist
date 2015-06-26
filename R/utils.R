@@ -26,7 +26,8 @@ AddInfo=function(solveres,dat,pi0){
     solveres
 }
 
-
+# neighbour for incomplete rankings
+#' @export
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
@@ -83,6 +84,7 @@ SearchPi0=function(dat,init,ctrl){
     curr_model
 }
 
+# TODO need to change: does not work for d==1
 t.gen = function(d){
     t.lst = list()
     t.lst[[d]] = matrix(rep(1:d,d),ncol = d, nrow = d,byrow=T)

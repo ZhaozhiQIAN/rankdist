@@ -27,12 +27,19 @@ NumericMatrix KendallNeighbour(NumericVector rank){
 
 // [[Rcpp::export]]
 NumericMatrix CayleyNeighbour(NumericVector rank){
-    int nobj = rank.size();
-    int nrow = nobj*(nobj-1)/2;
-    int ncol = nobj;
-    NumericMatrix ret(nrow,ncol);
     typedef NumericVector::iterator vec_iterator;
     vec_iterator rankitr;
+    rankitr = rank.begin();
+    int max_rank = 0;
+    int nobj = rank.size();
+    for (int j=0; j<nobj; ++j){
+        if(max_rank<rankitr[j])
+          max_rank = rankitr[j];
+    }
+    
+    int nrow = nobj*(nobj-1)/2-(nobj-max_rank+1)*(nobj-max_rank)/2;
+    int ncol = nobj;
+    NumericMatrix ret(nrow,ncol);
     int ind1=0;
     int ind2=1;
     for (int i = 0; i<nrow; ++i){
@@ -40,6 +47,16 @@ NumericMatrix CayleyNeighbour(NumericVector rank){
         for (int j=0; j<ncol; ++j){
             ret(i,j) = rankitr[j];
         }
+        while(ret(i,ind1)==ret(i,ind2)){
+          if(ret(i,ind2)==ret(i,ind1) && ind2==ncol-1){
+            ++ind1;
+            ind2 = ind1;
+          }
+          ++ind2;
+        }
+            
+        
+        
         double tmp = ret(i,ind1);
         ret(i,ind1) = ret(i,ind2);
         ret(i,ind2) = tmp;
@@ -50,7 +67,6 @@ NumericMatrix CayleyNeighbour(NumericVector rank){
         }
     }
     return(ret);
-    
 }
 
 // [[Rcpp::export]]
@@ -119,6 +135,15 @@ NumericVector CWeightGivenPi(NumericVector r1, NumericVector r2){
 		}
 		for (int i=1; i<nobj-1; ++i){
 			itrw[i*nrow+k] = itrw[(i-1)*nrow+k] + itrw[i*nrow+k];
+		}
+		// handle partial rankings
+		int max_rank=0;
+		for (int i=0 ;i<nobj; ++i){
+		  if (max_rank < itr1[i*nrow+k])
+		    max_rank = itr1[i*nrow+k];
+		}
+		for (int i=max_rank-1; i<nobj-1;++i){
+		  itrw[i*nrow+k] = 0;
 		}
 	}
 	return w;
