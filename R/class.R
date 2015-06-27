@@ -27,7 +27,6 @@ setClass( "RankData",
               nobj = "numeric",
               nobs = "numeric",
               ndistinct = "numeric",
-              ordering = "matrix",
               ranking = "matrix",
               count = "numeric",
               topq = "numeric", # a numeric vector: topq 
