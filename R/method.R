@@ -74,12 +74,13 @@ setMethod(
   "SingleClusterModel",
   signature = c("RankData","RankInit","RankControlWeightedKendall"),
   definition = function(dat,init,ctrl,modal_ranking) {
+    
     param_len = max(dat@topq)
     param.coeff = CWeightGivenPi(dat@ranking,modal_ranking)
     param.coeff = matrix(param.coeff,ncol = dat@ndistinct,byrow = TRUE) %*%
       dat@count
     param.coeff = as.numeric(param.coeff)[1:param_len]
-    
+   
     if (length(dat@topq) == 1 && dat@topq == dat@nobj-1) {
         
       obj = function(param) {
@@ -207,46 +208,45 @@ setGeneric("FindProb",
 )
 
 
+# setMethod("FindProb",
+#         signature=c("RankData","RankControlWeightedKendall"),
+#         definition = function(dat,ctrl,modal_ranking,param){
+#             distance = param %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
+#             if (length(dat@topq) == 1 && dat@topq == dat@nobj-1) {
+#                 C = exp(LogC(param))
+#                 prob = exp(-1*distance)/C
+#                 if(dat@topq>0){
+#                     prob = prob*factorial(dat@nobj-dat@topq)
+#                 }
+#             } else {
+#                 cond_prob = dat@subobs/dat@nobs
+#                 prob = exp(-1*distance)
+#                 for (i in 1:length(dat@topq)) {
+#                     j = dat@topq[i]
+#                     norm_c = exp(LogC(c(param[1:j],rep(0,length(param) - j))) - lgamma(dat@nobj-j+1))
+#                     prob[dat@q_ind[i]:(dat@q_ind[i+1]-1)] = prob[dat@q_ind[i]:(dat@q_ind[i+1]-1)]/norm_c*cond_prob[i]
+#                 }
+#                 
+#             }
+#             prob
+#         }
+# )
+
+# tmp version
+# TODO: delete this and uncomment the function above
 setMethod("FindProb",
         signature=c("RankData","RankControlWeightedKendall"),
         definition = function(dat,ctrl,modal_ranking,param){
             distance = param %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
-            if (length(dat@topq) == 1 && dat@topq == dat@nobj-1) {
-                C = exp(LogC(param))
-                prob = exp(-1*distance)/C
-                if(dat@topq>0){
-                    prob = prob*factorial(dat@nobj-dat@topq)
-                }
-                return(prob)
-            } else {
-                cond_porb = dat@subobs/dat@nobs
-                prob = exp(-1*distance)
-                for (i in 1:length(dat@topq)) {
-                    j = dat@topq[i]
-                    norm_c = exp(LogC(c(param[1:j],rep(0,param_len - j))) + lgamma(dat@nobj-j+1))
-                    prob[dat@q_ind[i]:(dat@q_ind[i+1]-1)] = prob[dat@q_ind[i]:(dat@q_ind[i+1]-1)]/norm_c*cond_prob[i]
-                }
-                
-            }
-            
+            prob = exp(-1*distance)
+			ind = c(1,6,26,86,206)
+			cond_prob = c(0.3327723,0.1593631,0.1364490,0.3714156)
+			for (i in 1:4){
+				prob[ind[i]:(ind[i+1]-1)] = prob[ind[i]:(ind[i+1]-1)]/sum(prob[ind[i]:(ind[i+1]-1)])*cond_prob[i]
+			}
+            prob
         }
 )
-
-# tmp version
-# TODO: delete this and uncomment the function above
-# setMethod("FindProb",
-        # signature=c("RankData","RankControlWeightedKendall"),
-        # definition = function(dat,ctrl,modal_ranking,param){
-            # distance = param %*% matrix(CWeightGivenPi(dat@ranking,modal_ranking),ncol = dat@ndistinct,byrow = TRUE)
-            # prob = exp(-1*distance)
-			# ind = c(1,6,26,86,206)
-			# cond_porb = c(0.3327723,0.1593631,0.1364490,0.3714156)
-			# for (i in 1:4){
-				# prob[ind[i]:(ind[i+1]-1)] = prob[ind[i]:(ind[i+1]-1)]/sum(prob[ind[i]:(ind[i+1]-1)])*cond_prob[i]
-			# }
-            # prob
-        # }
-# )
 setMethod("FindProb",
         signature=c("RankData","RankControlKendall"),
         definition = function(dat,ctrl,modal_ranking,param){

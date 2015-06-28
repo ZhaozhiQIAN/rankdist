@@ -134,9 +134,7 @@ RankDistanceModel <- function(dat,init,ctrl){
                 return (list(p=p,modal_ranking.est=modal_ranking.est,param=param,iteration=loopind))
             }
             for ( i in 1:clu){
-                dat.clu <- dat
-                dat.clu@count <- z[,i] * count
-                dat.clu@nobs <- sum(z[,i] * count)
+                dat.clu <- UpdateCount(dat, z[,i] * count)
                 # need change 
                 init.clu[[i]]@param.init <- list(param[[i]])
                 init.clu[[i]]@modal_ranking.init <- list(modal_ranking.est[[i]])

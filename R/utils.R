@@ -14,7 +14,17 @@ wToparam = function(w.true){
     param.true
 }
 
-
+UpdateCount = function(dat,count){
+  dat@count = count
+  dat@nobs = sum(count)
+  if (length(dat@topq)!=1 && min(dat@topq) < dat@nobj-1){
+    dat@subobs = numeric(length(dat@topq))
+    for (i in 1:length(dat@topq)){
+      dat@subobs[i] = sum(dat@count[ dat@q_ind[i]: (dat@q_ind[i+1]-1) ])
+    }
+  }
+  dat
+}
 
 
 
