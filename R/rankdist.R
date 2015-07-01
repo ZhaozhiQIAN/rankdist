@@ -2,6 +2,115 @@
 #' @importFrom Rcpp sourceCpp
 NULL
 
+#' Calculate Kendall distance matrix between rankings
+#' 
+#' @param ranking a matrix of rankings
+#' @return  Kendall distance matrix between rankings
+#' @export
+DistanceMatrix <- function(ranking){
+  n = ncol(ranking)
+  w = c(rep(0,n-2),1)
+  distcalc = function(x){
+    fai.coeff = matrix(CWeightGivenPi(ranking,x),nrow=nrow(ranking))
+    as.numeric(fai.coeff %*% w)
+  }
+  apply(ranking,1,distcalc)
+}
+
+#' Calculate Kendall distance
+#' #' Calculate Kendall distance matrix between one ranking and a matrix of rankings
+#' @param mat a matrix of rankings
+#' @param r a single ranking
+#' @return a vector of Kendall distance
+#' @export
+DistanceBlock <- function(mat,r){
+  n = ncol(mat)
+  w = c(rep(0,n-2),1)
+  fai.coeff = matrix(CWeightGivenPi(mat,r),nrow=nrow(mat))
+  as.numeric(fai.coeff %*% w)
+}
+
+#' Calculate Kendall distance between a pair of rankings
+#' #' Calculate Kendall distance matrix between a pair of rankings
+#' @param r1 a single ranking
+#' @param r2 a single ranking
+#' @return Kendall distance value
+#' @export
+DistancePair <- function(r1,r2){
+  n = length(r1)
+  w = c(rep(0,n-2),1)
+  fai.coeff = matrix(CWeightGivenPi(r1,r2),nrow=1)
+  as.numeric(fai.coeff %*% w)
+}
+
+#' Print a brief summary of the fitted model
+#' Print a brief summary of the fitted model. This includes information about goodness
+#' of fit as well as parameter estimation.
+#' @param model a ranking model returned by a call to RankDistanceModel function.
+#' @export
+ModelSummary <- function(model){
+  clus = rev(order(model$p))
+  nobj = length(model$modal_ranking.est[[1]])
+  mod_name = deparse(substitute(model))
+  cat("Summary of",mod_name,"\n")
+  cat(rep("=",nchar(mod_name)+10),"\n",sep="")
+  cat("Goodness of Fit\n")
+  cat("SSR:\t",model$SSR,"\n")
+  cat("BIC:\t",model$BIC,"\n")
+  cat("dof:\t",model$free_params,"\n")
+  cat("Parameter Estimation\n")
+  cat("Cluster",LETTERS[1:nobj],"p","Parameters\n",sep="\t")
+  for (i in 1:length(clus)){
+    cat(i,model$modal_ranking.est[[clus[i]]],round(model$p[clus[i]],digits=2),round(model$w.est[[clus[i]]],digits=2),"\n",sep="\t")
+  }
+}
+
+#' Generate simple examples
+#' 
+#' This function generates simple examples for illustrative propuses.
+#' The sample contains the rankings of five objects and the underlying model is a Mallow's phi
+#' model with dispersion parameter set to 0.2
+#' and modal ranking set to (1,2,3,4,5)
+#' @param rankng TRUE if "ranking" representation is used in the output data; otherwise "ordering" representation is used.
+#' @export
+GenerateExample <- function(ranking=TRUE){
+  rankings <- rbind(1:5,permute::allPerms(5))
+  central <- 1:5
+  Kdist <- DistanceBlock(rankings,central)
+  lambda <- 0.2
+  prob <- exp(-lambda*Kdist)
+  prob <- prob/sum(prob)
+  indx <- sample(1:120, 2000,replace=TRUE,prob=prob)
+  count <- as.numeric(table(indx))
+  if (ranking){
+    return(list(ranking=rankings,count=count))
+  } else {
+    return(list(ordering=OrderingToRanking(rankings),count=count))
+  }
+}
+
+#' Generate simple examples of top-q
+#' 
+#' This function generates simple examples for illustrative propuses.
+#' The sample contains the top-3 rankings of five objects and the underlying model is a weighted Kendall distance model
+#' model with weights set to (0.7,0.5,0.3,0)
+#' and modal ranking set to (1,2,3,4,5)
+#' @export
+GenerateExampleTopQ <- function(){
+  prankings <- rbind(1:5,permute::allPerms(5))
+  prankings[prankings>3] <- 4
+  prankings <- prankings[!duplicated(prankings),]
+  central <- prankings[1,]
+  w <- c(0.7,0.5,0.3,0)
+  fai <- wToparam(w)
+  distmat <- matrix(CWeightGivenPi(prankings,central),ncol=nrow(prankings),byrow=TRUE)
+  distvec <- as.numeric(fai%*%distmat)
+  probs <- exp(-distvec)/sum(exp(-distvec))
+  samples <- sample(1:nrow(prankings),10000,replace=TRUE,prob=probs)
+  count <- table(samples)
+  count <- as.numeric(count)
+  return(list(ranking=prankings,count=count))
+}
 
 #' Create Hash Value for Rank 
 #'
@@ -106,7 +215,7 @@ RankDistanceModel <- function(dat,init,ctrl){
     param.last <- list()
     func.call <- match.call()
     loopind=0
-    
+
     if (clu > 1L){  # use EM to fit multicluster model
         # further initialization
         modal_ranking.est <- init@modal_ranking.init
@@ -203,7 +312,7 @@ MomentsEst <- function(dat,size,pi0=NULL){
     # estimating pi0
     avg_rank <- dat@count %*% dat@ranking;
     if (is.null(pi0)){
-        modal_ranking <- sort(dat@ordering[1,])[order(avg_rank)]
+        modal_ranking <- sort(OrderingToRanking(dat@ranking[1,]))[order(avg_rank)]
     } else {
         modal_ranking <- pi0
     }

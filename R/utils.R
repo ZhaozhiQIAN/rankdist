@@ -41,6 +41,9 @@ AddInfo=function(solveres,dat,pi0){
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
+    if (ctrl@SearchPi0_show_message){
+      message("<<< initial ranking ",curr_best_ranking," >>>")
+    }
     if (max(dat@topq) < n-1){
         curr_best_ranking[curr_best_ranking>max(dat@topq)+1]=max(dat@topq)+1
     }
@@ -73,7 +76,7 @@ SearchPi0=function(dat,init,ctrl){
             if (tested[i]) next
             this_ranking = neighbours[i,]
             if (ctrl@SearchPi0_show_message){
-                message("Now Checking Neighbour ",this_ranking)
+                message("\tNow Checking Neighbour ",this_ranking)
             }
             this_solve <- SingleClusterModel(dat,init,ctrl,this_ranking)
             this_model = AddInfo(this_solve,dat,this_ranking)
