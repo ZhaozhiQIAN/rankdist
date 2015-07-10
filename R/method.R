@@ -178,8 +178,6 @@ setMethod("SingleClusterModel",
 )
 
 # single cluster model method for Phi Component Model
-# in dev
-#' @export
 setMethod("SingleClusterModel",
     signature = c("RankData","RankInit","RankControlPhiComponent"),
     definition = function(dat,init,ctrl,modal_ranking){
@@ -258,8 +256,7 @@ setMethod("FindProb",
         }
 )
 
-# in dev
-#' @export
+
 setMethod("FindProb",
         signature=c("RankData","RankControlPhiComponent"),
         definition = function(dat,ctrl,modal_ranking,param){

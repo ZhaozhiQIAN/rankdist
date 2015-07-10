@@ -67,11 +67,11 @@ ModelSummary <- function(model){
 
 #' Generate simple examples
 #' 
-#' This function generates simple examples for illustrative propuses.
+#' This function generates simple examples for illustrative proposes.
 #' The sample contains the rankings of five objects and the underlying model is a Mallow's phi
 #' model with dispersion parameter set to 0.2
 #' and modal ranking set to (1,2,3,4,5)
-#' @param rankng TRUE if "ranking" representation is used in the output data; otherwise "ordering" representation is used.
+#' @param ranking TRUE if "ranking" representation is used in the output data; otherwise "ordering" representation is used.
 #' @export
 GenerateExample <- function(ranking=TRUE){
   rankings <- rbind(1:5,permute::allPerms(5))
@@ -91,7 +91,7 @@ GenerateExample <- function(ranking=TRUE){
 
 #' Generate simple examples of top-q
 #' 
-#' This function generates simple examples for illustrative propuses.
+#' This function generates simple examples for illustrative proposes.
 #' The sample contains the top-3 rankings of five objects and the underlying model is a weighted Kendall distance model
 #' model with weights set to (0.7,0.5,0.3,0)
 #' and modal ranking set to (1,2,3,4,5)
@@ -159,8 +159,8 @@ HashtoRank <- function(h){
 #'
 #'    Ranking representation encodes the position of objects. Ordering representation is an ordered sequence of objects.
 #'    For example ranking (2 3 1 4) is equivalent to ordering (3 1 2 4), which means object 3 is first, object 1 is second, followed by object 2 and 4.
-#' @param ordering  a matrix of orderings or rankings. Each row contains an obseravtion.
-#' @return  a matrix of transformed rankings or orderings. Each row contains an obseravtion.
+#' @param ordering  a matrix of orderings or rankings. Each row contains an observation.
+#' @return  a matrix of transformed rankings or orderings. Each row contains an observation.
 #' @export
 OrderingToRanking <- function(ordering){
     if (is.matrix(ordering)){
@@ -188,8 +188,8 @@ OrderingToRanking <- function(ordering){
 #' \item{\code{modal_ranking.est}}{the estimated pi0 for each cluster.}
 #' \item{\code{p}}{the probability of each cluster.}
 #' \item{\code{w.est}}{the estimated weights of each cluster.}
-#' \item{\code{param.est}}{the param parameterization of weights of each cluster.}
-#' \item{\code{SSR}}{the sum of squares of pearson residuals}
+#' \item{\code{param.est}}{the param parametrisation of weights of each cluster.}
+#' \item{\code{SSR}}{the sum of squares of Pearson residuals}
 #' \item{\code{log_likelihood}}{the fitted log_likelihood}
 #' \item{\code{BIC}}{the fitted Bayesian Information Criterion value}
 #' \item{\code{free_params}}{the number of free parameters in the model}
@@ -216,7 +216,7 @@ RankDistanceModel <- function(dat,init,ctrl){
     func.call <- match.call()
     loopind=0
 
-    if (clu > 1L){  # use EM to fit multicluster model
+    if (clu > 1L){  # use EM to fit multi-cluster model
         # further initialization
         modal_ranking.est <- init@modal_ranking.init
         param <- init@param.init

@@ -37,7 +37,6 @@ AddInfo=function(solveres,dat,pi0){
 }
 
 # neighbour for incomplete rankings
-#' @export
 SearchPi0=function(dat,init,ctrl){
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
