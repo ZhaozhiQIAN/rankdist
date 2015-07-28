@@ -249,7 +249,6 @@ RankDistanceModel <- function(dat,init,ctrl){
                 # need change 
                 init.clu[[i]]@param.init <- list(param[[i]])
                 init.clu[[i]]@modal_ranking.init <- list(modal_ranking.est[[i]])
-                
                 solve.clu <- SearchPi0(dat.clu,init.clu[[i]],ctrl)
                 modal_ranking.est[[i]] <- solve.clu$pi0.ranking
                 param[[i]] <- solve.clu$param.est

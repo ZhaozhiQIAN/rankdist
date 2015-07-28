@@ -71,6 +71,149 @@ setGeneric("SingleClusterModel",
         def=function(dat,init,ctrl,modal_ranking){standardGeneric("SingleClusterModel")}
 )
 
+setMethod(
+  "SingleClusterModel",
+  signature = c("RankData", "RankInit", "RankControlWtau"),
+  definition = function( dat, init, ctrl, modal_ranking){
+    dset = data.frame(dat@ranking, dat@count)
+    nitem <- ncol(dset)-1
+    
+    test <- matrix(data = 0, nrow = factorial(nitem), ncol = nitem, byrow = TRUE)
+    temp1 <- 1:nitem
+    i <- 1
+    w <- rep(1,nitem)
+    modal <- 1:nitem
+    
+    ## generate a list of all possible rankings
+    for (j in 1:(nitem^nitem-1)){
+      temp1[1] <- nitem - j%%nitem
+      temp2 <- j - j%%nitem
+      for (k in nitem:2){
+        temp1[k] <- nitem - temp2%/%(nitem^(k-1))
+        temp2 <- temp2 - (nitem-temp1[k])*(nitem^(k-1))
+      }
+      temp2 <- 0
+      for (l in 1:nitem){
+        for (m in 1:nitem){
+          if (temp1[l] == temp1[m] && l != m){
+            temp2 <- 1
+          }
+        }
+      }
+      if (temp2 == 0){
+        for (p in 1:nitem){
+          test[i,p] = temp1[p]
+        }
+        i <- i+1
+      }
+    }
+    
+    n <- rep(0,factorial(nitem))
+    for (j in 1:factorial(nitem)){
+      for (k in 1:nrow(dset)){
+        temp_ind <- 0
+        for (l in 1:nitem){
+          if (test[j,l] != dset[k,l]) {temp_ind <- temp_ind + 1}
+        }
+        if (temp_ind == 0) {n[j] <- dset[k,nitem+1]}
+      }
+    }
+    test2 <- cbind(test, n)
+    
+    wdist <- function(x,y,w){
+      d <- 0
+      for (j in 1:(nitem-1)){
+        for (k in (j+1):nitem){
+          if ((x[j]-x[k])*(y[j]-y[k]) < 0) {d <- d+w[modal[k]]*w[modal[j]]}
+        }
+      }
+      d
+    }
+    
+    tempw <- rep(1,nitem)
+    td <- rep(0,factorial(nitem))
+    for (j in 1:factorial(nitem)){
+      td[j] <- 0
+      for (k in 1:factorial(nitem)){
+        td[j] <- td[j] + n[k]*wdist(test[j,],test[k,],tempw)
+      }
+    }
+    test3 <- cbind(test2, td)
+    
+    ## compute temporary modal ranking
+    temp1 <- max(td)
+    for (j in 1:factorial(nitem)){
+      if (td[j] == min(td)){
+        for (k in 1:nitem){
+          modal[k] <- test3[j,k]
+        }
+      }
+    }
+    
+    temp_modal <- 1:nitem
+    mup <- 1
+    while (mup == 1){
+      ## loglikelihood function
+      loglik_wdbm <- function(lambda){
+        ed <- rep(0,factorial(nitem))
+        for (j in 1:factorial(nitem)){
+          ed[j] <- exp(-wdist(modal,test3[j,1:nitem],lambda))
+        }
+        pc <- sum(ed)
+        pr <- rep(0,factorial(nitem))
+        for (j in 1:factorial(nitem)){
+          pr[j] <- ed[j]/pc
+        }
+        ll <- rep(0,factorial(nitem))
+        for (j in 1:factorial(nitem)){
+          ll[j] <- -log(pr[j])*test3[j,(nitem+1)]
+        }
+        sum(ll)
+      }
+      
+      up <- optim(rep(1,nitem), loglik_wdbm, NULL, method = "BFGS", hessian = TRUE)
+      w_up <- up$par
+      for (j in 1:nitem){
+        temp_modal[j] <- modal[j]
+      }
+      
+      twd <- rep(0,factorial(nitem))
+      for (j in 1:factorial(nitem)){
+        twd[j] <- 0
+        for (k in 1:factorial(nitem)){
+          twd[j] <- twd[j] + n[k]*wdist(test[j,],test[k,],w_up)
+        }
+      }
+      test3 <- cbind(test2, twd)
+      
+      temp1 <- max(td)
+      for (j in 1:factorial(nitem)){
+        if (twd[j] == min(twd)){
+          for (k in 1:nitem){
+            modal[k] <- test3[j,k]
+          }
+        }
+      }
+      mup <- 0
+      # loop until tmp modal and modal is the same
+      for (j in 1:nitem){
+        if (temp_modal[j] != modal[j]) {mup <- 1}
+      }
+    }
+    
+    list(
+      param.est = wToparam(up$par) ,log_likelihood = -1*up$value, pi0.ranking = modal
+    )
+    
+  }
+)
+
+
+
+
+
+
+
 # single cluster model method for Weighted Kendall Distance
 setMethod(
   "SingleClusterModel",
@@ -268,6 +411,80 @@ setMethod("FindProb",
 )
 
 
+setMethod("FindProb",
+          signature=c("RankData","RankControlWtau"),
+          definition = function(dat,ctrl,modal_ranking,param){
+            dset = data.frame(dat@ranking, dat@count)
+            nitem = dat@nobj
+            test <- matrix(data = 0, nrow = factorial(nitem), ncol = nitem, byrow = TRUE)
+            temp1 <- 1:nitem
+            i <- 1
+            wdist <- function(x,y,w){
+              d <- 0
+              for (j in 1:(nitem-1)){
+                for (k in (j+1):nitem){
+                  if ((x[j]-x[k])*(y[j]-y[k]) < 0) {d <- d+w[modal_ranking[k]]*w[modal_ranking[j]]}
+                }
+              }
+              d
+            }
+            
+            for (j in 1:(nitem^nitem-1)){
+              temp1[1] <- nitem - j%%nitem
+              temp2 <- j - j%%nitem
+              for (k in nitem:2){
+                temp1[k] <- nitem - temp2%/%(nitem^(k-1))
+                temp2 <- temp2 - (nitem-temp1[k])*(nitem^(k-1))
+              }
+              temp2 <- 0
+              for (l in 1:nitem){
+                for (m in 1:nitem){
+                  if (temp1[l] == temp1[m] && l != m){
+                    temp2 <- 1
+                  }
+                }
+              }
+              if (temp2 == 0){
+                for (p in 1:nitem){
+                  test[i,p] = temp1[p]
+                }
+                i <- i+1
+              }
+            }
+            
+            n <- rep(0,factorial(nitem))
+            for (j in 1:factorial(nitem)){
+              for (k in 1:nrow(dset)){
+                temp_ind <- 0
+                for (l in 1:nitem){
+                  if (test[j,l] != dset[k,l]) {temp_ind <- temp_ind + 1}
+                }
+                if (temp_ind == 0) {n[j] <- dset[k,nitem+1]}
+              }
+            }
+            test2 <- cbind(test, n)
+            
+            twd <- rep(0,factorial(nitem))
+            for (j in 1:factorial(nitem)){
+              twd[j] <- 0
+              for (k in 1:factorial(nitem)){
+                twd[j] <- twd[j] + n[k]*wdist(test[j,],test[k,],param)
+              }
+            }
+            test3 <- cbind(test2, twd)
+            ed <- rep(0,factorial(nitem))
+            for (j in 1:factorial(nitem)){
+              ed[j] <- exp(-wdist(modal_ranking,test3[j,1:nitem],param))
+            }
+            pc <- sum(ed)
+            fitted <- rep(0,factorial(nitem))
+            for (j in 1:factorial(nitem)){
+              fitted[j] <- ed[j]/pc * sum(test3[,(nitem+1)])
+            }
+            prob = fitted/dat@nobs
+            prob
+          }
+)
 
 
 

@@ -201,6 +201,16 @@ setClass( "RankControlPhiComponent",
         contains = "RankControl"
 )
 
+#' @title RankControlWdbm Class
+#' @description A S4 class for the Weighted tau model fitting.
+#' It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' Since no control parameters apply to the weighted tau model there is no need to assign any slot.
+#' @aliases RankControlWdbm RankControlWdbm-class
+#' @export
+setClass( "RankControlWtau",
+          contains = "RankControl"
+)
 
 
 

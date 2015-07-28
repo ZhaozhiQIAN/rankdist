@@ -38,6 +38,11 @@ AddInfo=function(solveres,dat,pi0){
 
 # neighbour for incomplete rankings
 SearchPi0=function(dat,init,ctrl){
+    if (class(ctrl)=="RankControlWtau"){
+      mod <- SingleClusterModel(dat,init,ctrl,0)
+      return(mod)
+    }
+    
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
     if (ctrl@SearchPi0_show_message){
