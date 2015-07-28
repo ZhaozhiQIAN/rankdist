@@ -1,6 +1,8 @@
 #' @useDynLib rankdist
 #' @importFrom Rcpp sourceCpp
+#' @import stats
 NULL
+
 
 #' Calculate Kendall distance matrix between rankings
 #' 
@@ -329,7 +331,7 @@ MomentsEst <- function(dat,size,pi0=NULL){
         logodd[i] <- prob_obs[pair_mat[1,i]]/prob_obs[pair_mat[2,i]]
         design_mat[i,] <- distance_mat[pair_mat[1,i],]-distance_mat[pair_mat[2,i],]
     }
-    param.est <- lm(logodd~design_mat-1)
+    param.est <- stats::lm(logodd~design_mat-1)
     param.est <- param.est$coefficients
     param.est[param.est<0] <- 0
     names(param.est) <- NULL

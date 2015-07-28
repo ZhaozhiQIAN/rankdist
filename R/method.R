@@ -116,7 +116,7 @@ setMethod(
           rep(Inf,param_len),method = "L-BFGS-B",control = ctrl@optimx_control
       )
       param.est = unlist(opt_res[1:param_len])
-      log_likelihood = -1 * opt_res[[param_len + 1]]
+      log_likelihood = -1 * obj(param.est)
     }
     param.est = c(param.est,rep(0,dat@nobj - 1 - param_len))
     list(
@@ -172,7 +172,7 @@ setMethod("SingleClusterModel",
             param*param.coeff + dat@nobs*LogC_Component(rep(param,dat@nobj-1))
         }
         
-        opt_res = optimize(f=obj,interval =c(0,100))
+        opt_res = stats::optimize(f=obj,interval =c(0,100))
         list(param.est=opt_res$minimum,log_likelihood=-1*opt_res$objective)
         }
 )
@@ -193,7 +193,7 @@ setMethod("SingleClusterModel",
                 ret <- param.coeff[i] - dat@nobs* rhs
                 ret
             }
-            opt_res[[i]] <- uniroot(f=obj[[i]],interval=c(0,100),f.lower=-Inf)
+            opt_res[[i]] <- stats::uniroot(f=obj[[i]],interval=c(0,100),f.lower=-Inf)
         }
         param.est <- vapply(opt_res,function(x)x$root,numeric(1))
         log_likelihood <- -param.coeff%*%param.est - dat@nobs*LogC_Component(param.est)
