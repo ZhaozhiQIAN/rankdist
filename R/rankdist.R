@@ -75,11 +75,11 @@ ModelSummary <- function(model){
 #' and modal ranking set to (1,2,3,4,5)
 #' @param ranking TRUE if "ranking" representation is used in the output data; otherwise "ordering" representation is used.
 #' @export
-GenerateExample <- function(ranking=TRUE){
+GenerateExample <- function(ranking=TRUE, central=1:5, lambda=0.2){
   rankings <- rbind(1:5,permute::allPerms(5))
-  central <- 1:5
+  # central <- 1:5
   Kdist <- DistanceBlock(rankings,central)
-  lambda <- 0.2
+  # lambda <- 0.2
   prob <- exp(-lambda*Kdist)
   prob <- prob/sum(prob)
   indx <- sample(1:120, 2000,replace=TRUE,prob=prob)
@@ -98,12 +98,12 @@ GenerateExample <- function(ranking=TRUE){
 #' model with weights set to (0.7,0.5,0.3,0)
 #' and modal ranking set to (1,2,3,4,5)
 #' @export
-GenerateExampleTopQ <- function(){
+GenerateExampleTopQ <- function(central=c(1,2,3,4,4),w=c(0.7,0.5,0.3,0)){
   prankings <- rbind(1:5,permute::allPerms(5))
   prankings[prankings>3] <- 4
   prankings <- prankings[!duplicated(prankings),]
-  central <- prankings[1,]
-  w <- c(0.7,0.5,0.3,0)
+  #  central <- prankings[1,]
+  #  w <- c(0.7,0.5,0.3,0)
   fai <- wToparam(w)
   distmat <- matrix(CWeightGivenPi(prankings,central),ncol=nrow(prankings),byrow=TRUE)
   distvec <- as.numeric(fai%*%distmat)
