@@ -38,10 +38,10 @@ AddInfo=function(solveres,dat,pi0){
 
 # neighbour for incomplete rankings
 SearchPi0=function(dat,init,ctrl){
-    if (class(ctrl)=="RankControlWtau"){
-      mod <- SingleClusterModel(dat,init,ctrl,0)
-      return(mod)
-    }
+#     if (class(ctrl)=="RankControlWtau"){
+#       mod <- SingleClusterModel(dat,init,ctrl,0)
+#       return(mod)
+#     }
     
     n = dat@nobj
     curr_best_ranking = init@modal_ranking.init[[1]] 
@@ -95,6 +95,9 @@ SearchPi0=function(dat,init,ctrl){
                 if (ctrl@SearchPi0_fast_traversal)
                     break
             }
+        }
+        if (ctrl@SearchPi0_show_message){
+            message("--> Moved to ",curr_best_ranking," <--")
         }
     }
     curr_model$SearchPi0_step = SearchPi0_step 
@@ -158,4 +161,55 @@ KwDist = function(p1, p2,w){
     distance
 }
 
+BreakTieEqualProb <- function(dat){
+    ind_comp <- which(dat@topq == dat@nobj-1)
+    if (max(dat@topq) == dat@nobj-1){
+        ind_comp_start <- dat@q_ind[ind_comp]
+        ind_comp_end <- dat@q_ind[ind_comp + 1] - 1
+        comp_ranking <- dat@ranking[ind_comp_start:ind_comp_end, ]
+        comp_count <- dat@count[ind_comp_start:ind_comp_end]
+    } else {
+        comp_ranking <- permute::allPerms(dat@nobj)
+        comp_ranking <- rbind(1:dat@nobj, comp_ranking)
+        comp_count <- rep(0, nrow(comp_ranking))
+    }
+    comp_hash <- RanktoHash(comp_ranking)
+    
+    for (i in 1:length(dat@topq)){
+        if(dat@topq[i] == dat@nobj-1) 
+            next
+        ind_start <- dat@q_ind[i]
+        ind_end <- dat@q_ind[i+1] - 1
+        this_q <- dat@topq[i]
+        this_inc <- 1/factorial(dat@nobj - this_q)
+        # generate permutations for tied group
+        tie_perm <- permute::allPerms((this_q+1):dat@nobj) + this_q
+        tie_perm <- rbind(tie_perm, (this_q+1):dat@nobj)
+        # iterate through top-q rankings
+        for (this_partial_ind in ind_start:ind_end){
+            this_partial <- dat@ranking[this_partial_ind, ]
+            this_count <- dat@count[this_partial_ind]
+            ind_tie <- which(this_partial == this_q + 1)
+            # iterate through possible tie-breakings
+            for (ind_break in 1:nrow(tie_perm)){
+                copy_partial <- this_partial
+                this_break <- tie_perm[ind_break, ]
+                ptr_break <- 1
+                # iterate through tied positions
+                for (this_tie_ind in ind_tie){
+                    copy_partial[this_tie_ind] = this_break[ptr_break]
+                    ptr_break <- ptr_break + 1
+                }
+                this_hash <- rankdist::RanktoHash(copy_partial)
+                ind_incre <- which(comp_hash == this_hash)
+                comp_count[ind_incre] = comp_count[ind_incre] + this_inc*this_count
+            }
+        }
+    }
+    # handle complete rankings
+    ind_nonempty_count = which(comp_count != 0)
+    comp_count = comp_count[comp_count > 0]
+    comp_ranking = comp_ranking[ind_nonempty_count, ]
+    comp_dat <- new("RankData", ranking=comp_ranking, count=comp_count)
+}
 

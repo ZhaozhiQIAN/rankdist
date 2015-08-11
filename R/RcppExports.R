@@ -25,3 +25,11 @@ LogC_Component <- function(fai) {
     .Call('rankdist_LogC_Component', PACKAGE = 'rankdist', fai)
 }
 
+Wtau <- function(obs, pi0) {
+    .Call('rankdist_Wtau', PACKAGE = 'rankdist', obs, pi0)
+}
+
+AllPerms <- function(nobj) {
+    .Call('rankdist_AllPerms', PACKAGE = 'rankdist', nobj)
+}
+

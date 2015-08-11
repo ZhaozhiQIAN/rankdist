@@ -73,3 +73,26 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// Wtau
+NumericMatrix Wtau(NumericMatrix obs, NumericVector pi0);
+RcppExport SEXP rankdist_Wtau(SEXP obsSEXP, SEXP pi0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type obs(obsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pi0(pi0SEXP);
+    __result = Rcpp::wrap(Wtau(obs, pi0));
+    return __result;
+END_RCPP
+}
+// AllPerms
+NumericMatrix AllPerms(int nobj);
+RcppExport SEXP rankdist_AllPerms(SEXP nobjSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< int >::type nobj(nobjSEXP);
+    __result = Rcpp::wrap(AllPerms(nobj));
+    return __result;
+END_RCPP
+}

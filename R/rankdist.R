@@ -3,6 +3,12 @@
 #' @import stats
 NULL
 
+# TODO:
+# Support Weighted-tau model. Done
+# Add argument for example functions. Done
+# Modify BIC criterion.
+# Kendall/\phi support top-q ranking
+# Add sub-section to review Weighted-tau model.
 
 #' Calculate Kendall distance matrix between rankings
 #' 
@@ -201,6 +207,11 @@ OrderingToRanking <- function(ordering){
 #' }
 #' @export
 RankDistanceModel <- function(dat,init,ctrl){
+    flag_transform = (min(dat@topq) != dat@nobj - 1)#  && class(ctrl) %in% c("RankControlKendall", "RankControlPhiComponent", "RankControlWtau")
+    if (flag_transform){
+        dat_org = dat
+        dat = BreakTieEqualProb(dat)
+    }
     # get parameters
     tt <- dat@nobj # number of objects
     n <- dat@nobs    # total observations
@@ -246,13 +257,14 @@ RankDistanceModel <- function(dat,init,ctrl){
             }
             for ( i in 1:clu){
                 dat.clu <- UpdateCount(dat, z[,i] * count)
-                # need change 
                 init.clu[[i]]@param.init <- list(param[[i]])
                 init.clu[[i]]@modal_ranking.init <- list(modal_ranking.est[[i]])
                 solve.clu <- SearchPi0(dat.clu,init.clu[[i]],ctrl)
                 modal_ranking.est[[i]] <- solve.clu$pi0.ranking
                 param[[i]] <- solve.clu$param.est
-                p_clu[i,] <- FindProb(dat,ctrl,modal_ranking.est[[i]],param[[i]])*p[i]
+                # change here: conditional prob for each cluster
+                # p_clu[i,] <- FindProb(dat,ctrl,modal_ranking.est[[i]],param[[i]])*p[i]
+                p_clu[i,] <- FindProb(dat.clu,ctrl,modal_ranking.est[[i]],param[[i]])*p[i]
             }
             log_likelihood_clu <- sum(log(colSums(p_clu))%*%dat@count)
             # break?
@@ -289,10 +301,45 @@ RankDistanceModel <- function(dat,init,ctrl){
     # finishing up with parameter estimation and summary statistics
     p <- as.numeric(p)
     v <- length(p) - 1 + sum(unlist(param)!=0)
-    bic <- 2*log_likelihood_clu.last - v*log(n)
-    expectation <- as.numeric(est_prob*n)
-    SSR <- sum((expectation-dat@count)^2/expectation)
-    ret <- list(p=p,modal_ranking.est=modal_ranking.est,w.est=lapply(param,paramTow),param.est=param,SSR=SSR,log_likelihood=log_likelihood_clu.last,free_params=v,BIC=bic,expectation=expectation,iteration=loopind,model.call=func.call)
+    if (flag_transform){
+        full_prob = rep(0, length(dat_org@count))
+        # aggregate probability
+        # iterate through different q
+        for (i in 1:length(dat_org@topq)){
+            ind_start <- dat_org@q_ind[i]
+            ind_end <- dat_org@q_ind[i+1] - 1
+            this_q <- dat_org@topq[i]
+            ranking_q <- dat@ranking
+            ranking_q[ranking_q > this_q] <- this_q + 1
+            hash_q = RanktoHash(ranking_q)
+            # iterate through partial rankings
+            for (ind_partial in ind_start:ind_end){
+                this_partial <- dat_org@ranking[ind_partial, ]
+                this_hash <- RanktoHash(this_partial)
+                ind_agg<- which(hash_q == this_hash)
+                prob_agg<- sum(est_prob[ind_agg])
+                full_prob[ind_partial] <- prob_agg
+            }
+            # conditional
+            p_q = dat_org@subobs[i] / dat_org@nobs
+            full_prob[ind_start:ind_end] = full_prob[ind_start:ind_end]*p_q
+        }
+        log_like<- dat_org@count %*% log(full_prob)
+        bic <- -2*log_like + v*log(n)
+        expectation <- as.numeric(full_prob*n)
+        SSR <- sum((expectation-dat_org@count)^2/expectation)
+    } else {
+        
+        log_like<- dat@count %*% as.numeric(log(est_prob))
+        log_likelihood_clu.last - log_like
+        
+        bic <- -2*log_like + v*log(n)
+        expectation <- as.numeric(est_prob*n)
+        SSR <- sum((expectation-dat@count)^2/expectation)
+    }
+    ret <- list(p=p,modal_ranking.est=modal_ranking.est,w.est=lapply(param,paramTow),
+                param.est=param,SSR=SSR,log_likelihood=log_likelihood_clu.last,free_params=v,
+                BIC=bic,expectation=expectation,iteration=loopind,model.call=func.call)
     ret
 }
 
