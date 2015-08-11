@@ -205,19 +205,41 @@ setClass( "RankControlPhiComponent",
 #' @description A S4 class for the Weighted tau model fitting.
 #' It is derived from class \code{\link{RankControl-class}}. 
 #' 
-#' Since no control parameters apply to the weighted tau model there is no need to assign any slot.
 #' @aliases RankControlWdbm RankControlWdbm-class
 #' @export
 setClass( "RankControlWtau",
           contains = "RankControl"
 )
 
+#' @title RankControlSpearman Class
+#' @description A S4 class for the Spearman distance model fitting.
+#' It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' @aliases RankControlSpearman RankControlSpearman-class
+#' @export
+setClass("RankControlSpearman",
+         contains = "RankControl"
+)
 
+#' @title RankControlFootrule Class
+#' @description A S4 class for the Footrule distance model fitting.
+#' It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' @aliases RankControlFootrule RankControlFootrule-class
+#' @export
+setClass("RankControlFootrule",
+         contains = "RankControl"
+)
 
-
-
-
-
+#' @title RankControlHamming Class
+#' @description A S4 class for the Hamming distance model fitting.
+#' It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' @aliases RankControlHamming RankControlHamming-class
+#' @export
+setClass("RankControlHamming",
+         contains = "RankControl"
+)
 
 
 

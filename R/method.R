@@ -71,147 +71,6 @@ setGeneric("SingleClusterModel",
         def=function(dat,init,ctrl,modal_ranking){standardGeneric("SingleClusterModel")}
 )
 # 
-# setMethod(
-#   "SingleClusterModel",
-#   signature = c("RankData", "RankInit", "RankControlWtau"),
-#   definition = function( dat, init, ctrl, modal_ranking){
-#     dset = data.frame(dat@ranking, dat@count)
-#     nitem <- ncol(dset)-1
-#     
-#     test <- matrix(data = 0, nrow = factorial(nitem), ncol = nitem, byrow = TRUE)
-#     temp1 <- 1:nitem
-#     i <- 1
-#     w <- rep(1,nitem)
-#     modal <- 1:nitem
-#     
-#     ## generate a list of all possible rankings
-#     for (j in 1:(nitem^nitem-1)){
-#       temp1[1] <- nitem - j%%nitem
-#       temp2 <- j - j%%nitem
-#       for (k in nitem:2){
-#         temp1[k] <- nitem - temp2%/%(nitem^(k-1))
-#         temp2 <- temp2 - (nitem-temp1[k])*(nitem^(k-1))
-#       }
-#       temp2 <- 0
-#       for (l in 1:nitem){
-#         for (m in 1:nitem){
-#           if (temp1[l] == temp1[m] && l != m){
-#             temp2 <- 1
-#           }
-#         }
-#       }
-#       if (temp2 == 0){
-#         for (p in 1:nitem){
-#           test[i,p] = temp1[p]
-#         }
-#         i <- i+1
-#       }
-#     }
-#     
-#     n <- rep(0,factorial(nitem))
-#     for (j in 1:factorial(nitem)){
-#       for (k in 1:nrow(dset)){
-#         temp_ind <- 0
-#         for (l in 1:nitem){
-#           if (test[j,l] != dset[k,l]) {temp_ind <- temp_ind + 1}
-#         }
-#         if (temp_ind == 0) {n[j] <- dset[k,nitem+1]}
-#       }
-#     }
-#     test2 <- cbind(test, n)
-#     
-#     wdist <- function(x,y,w){
-#       d <- 0
-#       for (j in 1:(nitem-1)){
-#         for (k in (j+1):nitem){
-#           if ((x[j]-x[k])*(y[j]-y[k]) < 0) {d <- d+w[modal[k]]*w[modal[j]]}
-#         }
-#       }
-#       d
-#     }
-#     
-#     tempw <- rep(1,nitem)
-#     td <- rep(0,factorial(nitem))
-#     for (j in 1:factorial(nitem)){
-#       td[j] <- 0
-#       for (k in 1:factorial(nitem)){
-#         td[j] <- td[j] + n[k]*wdist(test[j,],test[k,],tempw)
-#       }
-#     }
-#     test3 <- cbind(test2, td)
-#     
-#     ## compute temporary modal ranking
-#     temp1 <- max(td)
-#     for (j in 1:factorial(nitem)){
-#       if (td[j] == min(td)){
-#         for (k in 1:nitem){
-#           modal[k] <- test3[j,k]
-#         }
-#       }
-#     }
-#     
-#     temp_modal <- 1:nitem
-#     mup <- 1
-#     while (mup == 1){
-#       ## loglikelihood function
-#       loglik_wdbm <- function(lambda){
-#         ed <- rep(0,factorial(nitem))
-#         for (j in 1:factorial(nitem)){
-#           ed[j] <- exp(-wdist(modal,test3[j,1:nitem],lambda))
-#         }
-#         pc <- sum(ed)
-#         pr <- rep(0,factorial(nitem))
-#         for (j in 1:factorial(nitem)){
-#           pr[j] <- ed[j]/pc
-#         }
-#         ll <- rep(0,factorial(nitem))
-#         for (j in 1:factorial(nitem)){
-#           ll[j] <- -log(pr[j])*test3[j,(nitem+1)]
-#         }
-#         sum(ll)
-#       }
-#       
-#       up <- optim(rep(1,nitem), loglik_wdbm, NULL, method = "BFGS", hessian = TRUE)
-#       w_up <- up$par
-#       for (j in 1:nitem){
-#         temp_modal[j] <- modal[j]
-#       }
-#       
-#       twd <- rep(0,factorial(nitem))
-#       for (j in 1:factorial(nitem)){
-#         twd[j] <- 0
-#         for (k in 1:factorial(nitem)){
-#           twd[j] <- twd[j] + n[k]*wdist(test[j,],test[k,],w_up)
-#         }
-#       }
-#       test3 <- cbind(test2, twd)
-#       
-#       temp1 <- max(td)
-#       for (j in 1:factorial(nitem)){
-#         if (twd[j] == min(twd)){
-#           for (k in 1:nitem){
-#             modal[k] <- test3[j,k]
-#           }
-#         }
-#       }
-#       mup <- 0
-#       # loop until tmp modal and modal is the same
-#       for (j in 1:nitem){
-#         if (temp_modal[j] != modal[j]) {mup <- 1}
-#       }
-#     }
-#     
-#     list(
-#       param.est = wToparam(up$par) ,log_likelihood = -1*up$value, pi0.ranking = modal
-#     )
-#     
-#   }
-# )
-# 
-
-
-
-
 
 
 # single cluster model method for Weighted Kendall Distance
@@ -320,12 +179,11 @@ setMethod("SingleClusterModel",
               param.coeff <- as.numeric(param.coeff)
               allperm <- AllPerms(dat@nobj)
               all_coeff <- Wtau(allperm, modal_ranking)
-              
               obj <- function(param){
                   param.expand <- outer(param,param)[upper.tri(diag(length(param)))]
-                  LogC <- log(sum(exp(all_coeff %*% param.expand)))
-                  loglike <- param.coeff %*% param.expand - dat@nobs*LogC
-                  as.numeric(-1*loglike)
+                  LogC <- log(sum(exp(-1*all_coeff %*% param.expand)))
+                  loglike <- param.coeff %*% param.expand + dat@nobs*LogC
+                  as.numeric(loglike)
               }
               opt_res = optimx::optimx(
                   par = init@param.init[[init@clu]][1:param_len],fn = obj,
@@ -339,7 +197,63 @@ setMethod("SingleClusterModel",
           }
 )
 
+# single cluster model method for Kendall distance
+setMethod("SingleClusterModel",
+          signature = c("RankData","RankInit","RankControlSpearman"),
+          definition = function(dat,init,ctrl,modal_ranking){
+              param.coeff <- colSums((t(dat@ranking) - modal_ranking)^2)
+              param.coeff <- as.numeric(param.coeff)%*%dat@count
+              param.coeff <- 0.5*as.numeric(param.coeff)
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- 0.5*as.numeric(colSums((t(allperm) - modal_ranking)^2))
+              
+              obj <- function(param){
+                  LogC <- log(sum(exp(-1 * all_coeff * param)))
+                  param*param.coeff + dat@nobs*LogC
+              }
+              
+              opt_res <- stats::optimize(f=obj,interval =c(0,100))
+              list(param.est=opt_res$minimum,log_likelihood=-1*opt_res$objective)
+          }
+)
 
+setMethod("SingleClusterModel",
+          signature = c("RankData","RankInit","RankControlFootrule"),
+          definition = function(dat,init,ctrl,modal_ranking){
+              param.coeff <- apply(dat@ranking, 1, function(x){ sum(abs(x-modal_ranking))} )
+              param.coeff <- as.numeric(param.coeff)%*%dat@count
+              param.coeff <- as.numeric(param.coeff)
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(apply(allperm, 1, function(x){ sum(abs(x-modal_ranking))} ))
+              
+              obj <- function(param){
+                  LogC <- log(sum(exp(-1 * all_coeff * param)))
+                  param*param.coeff + dat@nobs*LogC
+              }
+              
+              opt_res <- stats::optimize(f=obj,interval =c(0,100))
+              list(param.est=opt_res$minimum,log_likelihood=-1*opt_res$objective)
+          }
+)
+
+setMethod("SingleClusterModel",
+          signature = c("RankData","RankInit","RankControlHamming"),
+          definition = function(dat,init,ctrl,modal_ranking){
+              param.coeff <- apply(dat@ranking, 1, function(x){sum(x != modal_ranking)} )
+              param.coeff <- as.numeric(param.coeff)%*%dat@count
+              param.coeff <- as.numeric(param.coeff)
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(apply(allperm, 1, function(x){sum(x != modal_ranking)} ))
+              
+              obj <- function(param){
+                  LogC <- log(sum(exp(-1 * all_coeff * param)))
+                  param*param.coeff + dat@nobs*LogC
+              }
+              
+              opt_res <- stats::optimize(f=obj,interval =c(0,100))
+              list(param.est=opt_res$minimum,log_likelihood=-1*opt_res$objective)
+          }
+)
 
 setGeneric("FindProb",
         def=function(dat,ctrl,modal_ranking,param){standardGeneric("FindProb")}
@@ -398,99 +312,53 @@ setMethod("FindProb",
               allperm <- AllPerms(dat@nobj)
               all_coeff <- Wtau(allperm, modal_ranking)
               param.expand <- outer(param,param)[upper.tri(diag(length(param)))]
-              C <- sum(exp(all_coeff %*% param.expand))
+              C <- sum(exp(-1*all_coeff %*% param.expand))
               distance<- Wtau(dat@ranking, modal_ranking) %*% param.expand
-              prob<- exp(distance)/C
+              prob<- exp(-1*distance)/C
               prob
           }
 )
-# 
-# setMethod("FindProb",
-#           signature=c("RankData","RankControlWtau"),
-#           definition = function(dat,ctrl,modal_ranking,param){
-#             dset = data.frame(dat@ranking, dat@count)
-#             nitem = dat@nobj
-#             test <- matrix(data = 0, nrow = factorial(nitem), ncol = nitem, byrow = TRUE)
-#             temp1 <- 1:nitem
-#             i <- 1
-#             wdist <- function(x,y,w){
-#               d <- 0
-#               for (j in 1:(nitem-1)){
-#                 for (k in (j+1):nitem){
-#                   if ((x[j]-x[k])*(y[j]-y[k]) < 0) {d <- d+w[modal_ranking[k]]*w[modal_ranking[j]]}
-#                 }
-#               }
-#               d
-#             }
-#             
-#             for (j in 1:(nitem^nitem-1)){
-#               temp1[1] <- nitem - j%%nitem
-#               temp2 <- j - j%%nitem
-#               for (k in nitem:2){
-#                 temp1[k] <- nitem - temp2%/%(nitem^(k-1))
-#                 temp2 <- temp2 - (nitem-temp1[k])*(nitem^(k-1))
-#               }
-#               temp2 <- 0
-#               for (l in 1:nitem){
-#                 for (m in 1:nitem){
-#                   if (temp1[l] == temp1[m] && l != m){
-#                     temp2 <- 1
-#                   }
-#                 }
-#               }
-#               if (temp2 == 0){
-#                 for (p in 1:nitem){
-#                   test[i,p] = temp1[p]
-#                 }
-#                 i <- i+1
-#               }
-#             }
-#             
-#             n <- rep(0,factorial(nitem))
-#             for (j in 1:factorial(nitem)){
-#               for (k in 1:nrow(dset)){
-#                 temp_ind <- 0
-#                 for (l in 1:nitem){
-#                   if (test[j,l] != dset[k,l]) {temp_ind <- temp_ind + 1}
-#                 }
-#                 if (temp_ind == 0) {n[j] <- dset[k,nitem+1]}
-#               }
-#             }
-#             test2 <- cbind(test, n)
-#             
-#             twd <- rep(0,factorial(nitem))
-#             for (j in 1:factorial(nitem)){
-#               twd[j] <- 0
-#               for (k in 1:factorial(nitem)){
-#                 twd[j] <- twd[j] + n[k]*wdist(test[j,],test[k,],param)
-#               }
-#             }
-#             test3 <- cbind(test2, twd)
-#             ed <- rep(0,factorial(nitem))
-#             for (j in 1:factorial(nitem)){
-#               ed[j] <- exp(-wdist(modal_ranking,test3[j,1:nitem],param))
-#             }
-#             pc <- sum(ed)
-#             fitted <- rep(0,factorial(nitem))
-#             for (j in 1:factorial(nitem)){
-#               fitted[j] <- ed[j]/pc * sum(test3[,(nitem+1)])
-#             }
-#             prob = fitted/dat@nobs
-#             prob
-#           }
-# )
-# 
+
+setMethod("FindProb",
+          signature=c("RankData","RankControlSpearman"),
+          definition<- function(dat,ctrl,modal_ranking,param){
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- 0.5*as.numeric(colSums((t(allperm) - modal_ranking)^2))
+              C <- sum(exp(-1*all_coeff * param))
+              param.coeff <- colSums((t(dat@ranking) - modal_ranking)^2)
+              param.coeff <- 0.5*as.numeric(param.coeff)
+              distance <- param.coeff * param
+              prob <- exp(-1*distance)/C
+              prob
+          }
+)
 
 
+setMethod("FindProb",
+          signature=c("RankData","RankControlFootrule"),
+          definition<- function(dat,ctrl,modal_ranking,param){
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(apply(allperm, 1, function(x){ sum(abs(x-modal_ranking))} ))
+              C <- sum(exp(-1*all_coeff * param))
+              param.coeff <- apply(dat@ranking, 1, function(x){ sum(abs(x-modal_ranking))} )
+              param.coeff <- as.numeric(param.coeff)
+              distance <- param.coeff * param
+              prob <- exp(-1*distance)/C
+              prob
+          }
+)
 
 
-
-
-
-
-
-
-
-
-
-
+setMethod("FindProb",
+          signature=c("RankData","RankControlHamming"),
+          definition<- function(dat,ctrl,modal_ranking,param){
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(apply(allperm, 1, function(x){sum(x != modal_ranking)} ))
+              C <- sum(exp(-1*all_coeff * param))
+              param.coeff <- apply(dat@ranking, 1, function(x){sum(x != modal_ranking)} )
+              param.coeff <- as.numeric(param.coeff)
+              distance <- param.coeff * param
+              prob <- exp(-1*distance)/C
+              prob
+          }
+)
