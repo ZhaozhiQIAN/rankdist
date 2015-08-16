@@ -255,6 +255,24 @@ setMethod("SingleClusterModel",
           }
 )
 
+setMethod("SingleClusterModel",
+          signature = c("RankData","RankInit","RankControlCayley"),
+          definition = function(dat,init,ctrl,modal_ranking){
+              param.coeff <- FindCayley(dat@ranking, modal_ranking)%*%dat@count
+              param.coeff <- as.numeric(param.coeff)
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(FindCayley(allperm, modal_ranking))
+              
+              obj <- function(param){
+                  LogC <- log(sum(exp(-1 * all_coeff * param)))
+                  param*param.coeff + dat@nobs*LogC
+              }
+              
+              opt_res <- stats::optimize(f=obj,interval =c(0,100))
+              list(param.est=opt_res$minimum,log_likelihood=-1*opt_res$objective)
+          }
+)
+
 setGeneric("FindProb",
         def=function(dat,ctrl,modal_ranking,param){standardGeneric("FindProb")}
 )
@@ -357,6 +375,19 @@ setMethod("FindProb",
               C <- sum(exp(-1*all_coeff * param))
               param.coeff <- apply(dat@ranking, 1, function(x){sum(x != modal_ranking)} )
               param.coeff <- as.numeric(param.coeff)
+              distance <- param.coeff * param
+              prob <- exp(-1*distance)/C
+              prob
+          }
+)
+
+setMethod("FindProb",
+          signature=c("RankData","RankControlCayley"),
+          definition<- function(dat,ctrl,modal_ranking,param){
+              allperm <- AllPerms(dat@nobj)
+              all_coeff <- as.numeric(FindCayley(allperm, modal_ranking))
+              C <- sum(exp(-1*all_coeff * param))
+              param.coeff <- FindCayley(dat@ranking, modal_ranking)
               distance <- param.coeff * param
               prob <- exp(-1*distance)/C
               prob

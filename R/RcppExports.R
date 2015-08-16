@@ -25,6 +25,14 @@ LogC_Component <- function(fai) {
     .Call('rankdist_LogC_Component', PACKAGE = 'rankdist', fai)
 }
 
+cycle_decomp <- function(comp) {
+    .Call('rankdist_cycle_decomp', PACKAGE = 'rankdist', comp)
+}
+
+FindCayley <- function(obs, pi0) {
+    .Call('rankdist_FindCayley', PACKAGE = 'rankdist', obs, pi0)
+}
+
 Wtau <- function(obs, pi0) {
     .Call('rankdist_Wtau', PACKAGE = 'rankdist', obs, pi0)
 }

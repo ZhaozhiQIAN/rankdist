@@ -241,6 +241,14 @@ setClass("RankControlHamming",
          contains = "RankControl"
 )
 
-
+#' @title RankControlCayley Class
+#' @description A S4 class for the Cayley distance model fitting.
+#' It is derived from class \code{\link{RankControl-class}}. 
+#' 
+#' @aliases RankControlCayley RankControlCayley-class
+#' @export
+setClass("RankControlCayley",
+         contains = "RankControl"
+)
 
 
